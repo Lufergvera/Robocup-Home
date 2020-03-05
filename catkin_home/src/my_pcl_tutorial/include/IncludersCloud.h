@@ -1,6 +1,10 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <iostream>
+#include<iterator> // for iterators 
+#include <vector>  // for vectors 
+//#include<conio.h>
+#include<math.h>
 //#include <pcl/ros/conversions.h>
 #include <pcl_conversions/pcl_conversions.h>
 //#include <pcl/conversions.h>

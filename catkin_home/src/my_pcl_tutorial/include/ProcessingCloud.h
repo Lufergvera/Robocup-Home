@@ -21,29 +21,29 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr CloudFinal(new pcl::PointCloud<pcl::PointXYZ
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr inputcloud_RGB(new pcl::PointCloud<pcl::PointXYZRGB>);
 pcl::PointCloud<pcl::PointXYZ>::Ptr inputcloud_XYZ(new pcl::PointCloud<pcl::PointXYZ>);
 
-/*pcl::PointCloud<pcl::PointXYZ>::Ptr BiggestCluster(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, double tolerance, bool& flag) {
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr BiggestCluster(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, double tolerance, bool& flag) {
 	
 	int i = 0;
 	// Creating the KdTree object for the search method of the extraction
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+	pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
 	tree->setInputCloud(cloud);
 
 	//Set parameters for the clustering
 	std::vector<pcl::PointIndices> cluster_indices;
-	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+	pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
 	ec.setClusterTolerance(tolerance); // 5mm
-	ec.setMinClusterSize(500);
+	ec.setMinClusterSize(100);
 	ec.setMaxClusterSize(25000);
 	ec.setSearchMethod(tree);
 	ec.setInputCloud(cloud);
 	ec.extract(cluster_indices);
 
 	std::vector<unsigned int> npoints;
-	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clouds;
+	std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
 
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
 	{
-		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZ>);
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
 		for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit)
 			cloud_cluster->points.push_back(cloud->points[*pit]); //*
 		cloud_cluster->width = cloud_cluster->points.size();
@@ -57,7 +57,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr inputcloud_XYZ(new pcl::PointCloud<pcl::Poin
 		clouds.push_back(cloud_cluster);
 
 	}
-
 	int maxindex;
 	int count = 0;
 	if (npoints.size() == 0) {
@@ -76,8 +75,12 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr inputcloud_XYZ(new pcl::PointCloud<pcl::Poin
 			i++;
 		}
 	}
+	ROS_INFO_STREAM(clouds.size());
+	ROS_INFO_STREAM(clouds[0]->points.size());
+
+	return clouds [0];
 	return clouds[maxindex>0?maxindex:0];
-}*/
+}
 
 /*void PasstroughFilterXYZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr& in, pcl::PointCloud<pcl::PointXYZ>::Ptr& out, double lowboxlimits[3], double upperboxlimits[3]) {
 	//Use pass through filters on the H, S and V channels to find points with same colour as the hand.
@@ -195,16 +198,17 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr inputcloud_XYZ(new pcl::PointCloud<pcl::Poin
 	}
 	return vectorcoefficients;
 }*/
-float dotp(pcl::PointXYZRGB v1,pcl::PointXYZRGB v2){
+float dotp(pcl::PointXYZRGB v1, pcl::PointXYZRGB v2)
+{
 
 	float product = 0;
-   	product += v1.x * v2.x;
+	product += v1.x * v2.x;
 	product += v1.y * v2.y;
-   	product += v1.z * v2.z;
-   	return product;
-
+	product += v1.z * v2.z;
+	return product;
 }
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr PlanarRANSAC(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,double &zPLANE) {
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr PlanarRANSAC(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, double &zPLANE)
+{
 
 	// perform ransac planar filtration to remove table top
 	pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
@@ -220,7 +224,6 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr PlanarRANSAC(const pcl::PointCloud<pcl::P
 
 	seg1.setInputCloud(cloud);
 	seg1.segment(*inliers, *coefficients);
-
 
 	// Create the filtering object
 	pcl::ExtractIndices<pcl::PointXYZRGB> extract;
@@ -238,20 +241,21 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr PlanarRANSAC(const pcl::PointCloud<pcl::P
 	dumb.z = cloud->points[inliers->indices[0]].z;
 
 	//pcl::PointCloud<pcl::PointXYZRGB>::iterator it = outcloud_XYZ; outcloud_XYZ->end();it++
-	for(int i=0; i<outcloud_XYZ->points.size();i++){
+	for (int i = 0; i < outcloud_XYZ->points.size(); i++)
+	{
 		//i++;
-		float tempor= dotp(dumb,outcloud_XYZ->points[i]);
-		if(tempor<=0) inliers2->indices.push_back(i);
-		
+		float tempor = dotp(dumb, outcloud_XYZ->points[i]);
+		if (tempor <= 0)
+			inliers2->indices.push_back(i);
 	}
 
 	pcl::ExtractIndices<pcl::PointXYZRGB> extract2;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr outcloud_XYZ2(new pcl::PointCloud<pcl::PointXYZRGB>);
 
-	extract.setInputCloud(outcloud_XYZ);
-	extract.setIndices(inliers2);
-	extract.setNegative(true);
-	extract.filter(*outcloud_XYZ2);
+	extract2.setInputCloud(outcloud_XYZ);
+	extract2.setIndices(inliers2);
+	extract2.setNegative(true);
+	extract2.filter(*outcloud_XYZ2);
 
 	/*
 	// create a pcl object to hold the passthrough filtered results
@@ -267,59 +271,54 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr PlanarRANSAC(const pcl::PointCloud<pcl::P
 	zPLANE = cloud->points[inliers->indices[0]].z;
 	pass.filter(*xyzCloudPtrPassthroughFiltered);
 	*/
-	return outcloud_XYZ;
+	return outcloud_XYZ2;
 }
 
-my_pcl_tutorial::SegmentedClustersArray Clustering(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud) {
-
+my_pcl_tutorial::SegmentedClustersArray Clustering(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
+{
 	// Create the KdTree object for the search method of the extraction
-	pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB>);
-	tree->setInputCloud (cloud);
+	pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
+	tree->setInputCloud(cloud);
 
 	// create the extraction object for the clusters
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
 	// specify euclidean cluster parameters
-	ec.setClusterTolerance (0.01); // 2cm
-	ec.setMinClusterSize (500);
-	ec.setMaxClusterSize (25000);
-	ec.setSearchMethod (tree);
-	ec.setInputCloud (cloud);
+	ec.setClusterTolerance(0.01); // 2cm
+	ec.setMinClusterSize(500);
+	ec.setMaxClusterSize(25000);
+	ec.setSearchMethod(tree);
+	ec.setInputCloud(cloud);
 	// exctract the indices pertaining to each cluster and store in a vector of pcl::PointIndices
-	ec.extract (cluster_indices);
+	ec.extract(cluster_indices);
 
-  	// declare an instance of the SegmentedClustersArray message
-  	my_pcl_tutorial::SegmentedClustersArray CloudClusters;
+	// declare an instance of the SegmentedClustersArray message
+	my_pcl_tutorial::SegmentedClustersArray CloudClusters;
 
-  	// declare the output variable instances
-  	sensor_msgs::PointCloud2 output;
-  	pcl::PCLPointCloud2 outputPCL;
+	// declare the output variable instances
+	sensor_msgs::PointCloud2 output;
+	pcl::PCLPointCloud2 outputPCL;
 
- 	// here, cluster_indices is a vector of indices for each cluster. iterate through each indices object to work with them seporately
-  	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
-  	{
+	// here, cluster_indices is a vector of indices for each cluster. iterate through each indices object to work with them seporately
+	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
+	{
 
-    // create a new clusterData message object
-    //obj_recognition::ClusterData clusterData;
+		// create a new clusterData message object
+		//obj_recognition::ClusterData clusterData;
 
+		// create a pcl object to hold the extracted cluster
+		pcl::PointCloud<pcl::PointXYZRGB> *cluster = new pcl::PointCloud<pcl::PointXYZRGB>;
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr clusterPtr(cluster);
 
-    // create a pcl object to hold the extracted cluster
-    pcl::PointCloud<pcl::PointXYZRGB> *cluster = new pcl::PointCloud<pcl::PointXYZRGB>;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr clusterPtr (cluster);
-
-    // now we are in a vector of indices pertaining to a single cluster.
-    // Assign each point corresponding to this cluster in xyzCloudPtrPassthroughFiltered a specific color for identification purposes
-		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
+		// now we are in a vector of indices pertaining to a single cluster.
+		// Assign each point corresponding to this cluster in xyzCloudPtrPassthroughFiltered a specific color for identification purposes
+		for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit)
 		{
-		clusterPtr->points.push_back(cloud->points[*pit]);
-
+			clusterPtr->points.push_back(cloud->points[*pit]);
 		}
 
-
-
-
 		// convert to pcl::PCLPointCloud2
-		pcl::toPCLPointCloud2( *clusterPtr ,outputPCL);
+		pcl::toPCLPointCloud2(*clusterPtr, outputPCL);
 
 		// Convert to ROS data type
 		pcl_conversions::fromPCL(outputPCL, output);
@@ -327,7 +326,99 @@ my_pcl_tutorial::SegmentedClustersArray Clustering(const pcl::PointCloud<pcl::Po
 		// add the cluster to the array message
 		//clusterData.cluster = output;
 		CloudClusters.clusters.push_back(output);
-  	}
+	}
 	return CloudClusters;
 }
 
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr CenteredCluster(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, double tolerance, bool &flag, float centroidlabel[2])
+{
+
+	int i = 0;
+	// Creating the KdTree object for the search method of the extraction
+	pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
+	tree->setInputCloud(cloud);
+
+	//Set parameters for the clustering
+	std::vector<pcl::PointIndices> cluster_indices;
+	pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
+	ec.setClusterTolerance(tolerance); // 5mm
+	ec.setMinClusterSize(100);
+	ec.setMaxClusterSize(25000);
+	ec.setSearchMethod(tree);
+	ec.setInputCloud(cloud);
+	ec.extract(cluster_indices);
+
+	std::vector<unsigned int> npoints;
+	std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clouds;
+
+	std::vector<float[2]> centroids;
+
+	std::vector<float> euclideanvec;
+
+	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
+	{
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_cluster(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+		for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit)
+			cloud_cluster->points.push_back(cloud->points[*pit]);
+
+		cloud_cluster->width = cloud_cluster->points.size();
+		cloud_cluster->height = 1;
+		cloud_cluster->is_dense = true;
+		float center3D[3];
+		int k;
+		for (k = 0; k < cloud_cluster->points.size(); k++)
+		{
+			center3D[0] += cloud_cluster->points[k].x;
+			center3D[1] += cloud_cluster->points[k].y;
+			center3D[2] += cloud_cluster->points[k].y;
+		}
+		for (int i = 0; i < 3; i++)
+			center3D[i] = center3D[i] / (cloud_cluster->points.size());
+
+		float xSqr = (centroidlabel[0] - center3D[0]);
+		float ySqr = (centroidlabel[1] - center3D[1]);
+
+		float dist = std::pow(xSqr, 2) + std::pow(xSqr, 2);
+
+		dist = std::sqrt(dist);
+
+		euclideanvec.push_back(dist);
+
+		npoints.push_back(cloud_cluster->points.size());
+		//std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size() << " data points." << std::endl;
+
+		//Save the clouds in a vector
+		clouds.push_back(cloud_cluster);
+	}
+	
+	ROS_INFO_STREAM(clouds.size());
+
+	int maxindex;
+	int count = 0;
+	if (npoints.size() == 0)
+	{
+		//std::cout << "We have not found any cluster for the cloud";
+		flag = false;
+		return cloud;
+	}
+	else
+	{
+		unsigned int mindist = euclideanvec[0];
+		maxindex = 0;
+		for (std::vector<float>::iterator it = euclideanvec.begin(); it != euclideanvec.end(); ++it)
+		{
+					
+			if (*it < mindist)
+			{
+				mindist = *it;
+				maxindex = i;
+			}
+			i++;
+			
+		}
+	}
+	return clouds[0];
+	return clouds[maxindex > 0 ? maxindex : 0];
+
+}
