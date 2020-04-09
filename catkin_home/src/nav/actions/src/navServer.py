@@ -59,13 +59,15 @@ class navigationServer(object):
         # Helper variables
         r = rospy.Rate(1)
         success = True
-        g = rospy.Publisher('goal', MoveBaseGoal, queue_size=10)
+        g = rospy.Publisher('move_base_simple/goal', MoveBaseGoal, queue_size=10)
         
         # Start executing the action
-        self._feedback.pose = PoseStamped()
+        self._feedback.status = True
         rospy.loginfo("Looking for the goal")
-        isValid = self.searchGoal(goal)
-
+        if(type(goal) == str):
+            isValid = self.searchGoal(goal)
+        #else:
+            #go to object action
         if self._as.is_preempt_requested():
 
             rospy.loginfo('%s: Preempted' % self._action_name)
@@ -79,10 +81,10 @@ class navigationServer(object):
             rospy.loginfo("Goal found!")
 
             # Look if the move_base node is up
-            client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+            move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
             rospy.loginfo("Waiting for server response")
 
-            #client.wait_for_server()
+            #move_base_client.wait_for_server()
             #rospy.loginfo("Server found")
 
             # Creating the goal message (PoseStamped)
@@ -103,21 +105,25 @@ class navigationServer(object):
 
             g.publish(target)
 
-            rospy.loginfo("Sending Goal")
-            #client.send_goal(target)
+            rospy.loginfo("Sending Goal to move base node")
+            #move_base_client.send_goal(target)
             #rospy.loginfo("Goal sent!")
             #client.wait_for_result()
-            #rospy.loginfo("Waiting for result!")
-            #sate = actionlib.SimpleActionClient.get_state()
-            #rospy.loginfo("State: %s", str(sate))
-            #result =  client.get_result
+            #move_base_result = move_base_client.get_result() 
+            while (move_base_result.result != 3):
+                if move_base_result.result == 1:
+                    self._as.publish_feedback(self._feedback)
+                else:
+                     self._result = False
+                     self._as.publish_feedback(False)
+                     self._as.set_succeeded(self._result)    
 
-            self._result = result
+            self._result = success
             rospy.loginfo('%s: Succeeded' % self._action_name)
             self._as.set_succeeded(self._result)
         else:
-            self._result = result
-            rospy.loginfo('%s: Aborted' % self._action_name)
+            self._result = success
+            rospy.loginfo('%s: Aborted. Location not found' % self._action_name)
             self._as.set_succeeded(self._result)
 
 
