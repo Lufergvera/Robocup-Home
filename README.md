@@ -8,7 +8,7 @@ This repository contains the development of RoBorregos robotic's solution for Ro
 ### Mechanical structure
 
 >#### Luis Fernando Garza Vera
->Design and manufacture of the robotic arm system.
+>Manufacture of the robotic arm system.
 
 >#### Carlos Amín Méndez Cáceres
 >Solidwork design of the base and manufacturing of structures.
