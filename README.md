@@ -8,7 +8,7 @@ This repository contains the development of RoBorregos robotic's solution for Ro
 ### Mechanical structure
 
 >#### Luis Fernando Garza Vera
->Design and manufacture of the robotic arm system.
+>Design and manufacture of the robotic arm system. The design is based on a Scara robot, it gives us 4DOF that is enough to complete the differents challenges.
 
 >#### Carlos Amín Méndez Cáceres
 >Solidwork design of the base and manufacturing of structures.
